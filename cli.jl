@@ -12,7 +12,7 @@ function study()
 
 	if !isfile(filename)
 		@warn "No deck by that name exists."
-		study()
+		return study()
 	end
 
 	deck = try
@@ -61,3 +61,4 @@ while true
 		exit()
 	end
 end
+

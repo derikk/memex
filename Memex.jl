@@ -1,5 +1,5 @@
 module Memex
-const version = v"0.0.1"
+const version = v"0.0.2"
 
 using Dates
 import Configurations: @option, Reflect

@@ -10,30 +10,29 @@ const ln(x) = log(x)
 # asind  acosd  atand  acotd  asecd  acscd])
 
 
-
-const operations = [:+, :-, :*, :/, :^, :√, :sqrt, :∛, :cbrt]
-const constants = [:π, :pi, :e, :im, :i]
-const explog = [:exp, :log, :ln, :log2, :log10]
-# const operations = Symbol.([+, -, *, /, ^, √, sqrt, ∛, cbrt])
-const allowedops = operations ∪ explog ∪ [:binomial, :factorial]
+const basicops = [:+, :-, :*, :/, :^, :√, :sqrt, :∛, :cbrt]
+const explog = [:exp, :exp2, :exp10, :log, :ln, :log2, :log10]
+const allowedops = Set(basicops ∪ explog ∪ [:binomial, :factorial])
 
 is_safe(::Number; _...) = true
 is_safe(::Symbol; _...) = true
 is_safe(::Any; _...) = false  # by default, things are dangerous
 
 function is_safe(expr::Expr; safe_ops=allowedops, debug=false)
-	if expr.head != :call  # TODO: allow vectors?
-		debug && println("Only calls are allowed.")
+	if expr.head == :call
+		func = expr.args[1]
+		if func ∈ safe_ops
+			return all(is_safe, expr.args[2:end])
+		else
+			debug && println(func, " is not an allowed operation.")
+			return false
+		end
+	elseif expr.head ∈ [:vect, :hcat, :vcat, :ncat, :row, :nrow]
+		return all(is_safe, expr.args)
+	else
+		debug && println("Only function calls and arrays are allowed.")
 		return false
 	end
-
-	func = expr.args[1]
-	if func ∉ safe_ops
-		debug && println(func, " is not an allowed operation.")
-		return false
-	end
-
-	return all(is_safe.(expr.args[2:end]))
 end
 
 function safe_eval(expr::Expr; safe_ops=allowedops)
@@ -44,24 +43,3 @@ function safe_eval(expr::Expr; safe_ops=allowedops)
 	end
 end
 safe_eval(s::String) = safe_eval(Meta.parse(s))
-
-
-
-# is_safe(s::Symbol) = s ∈ [:+, :-, :*, :/, :^, :√, :sqrt, :∛, :cbrt, :π, :pi, :e, :im, :i]
-# is_safe(e::Expr) = e.head == :call && all(is_safe.(e.args))  # TODO: allow :vect?
-
-# is_safe(e::Expr; safe_ops=allowed_ops) = e.head == :call && e.args[1] ∈ safe_ops && all(is_safe.(e.args[2:end]))
-
-#=function is_safe(expr::Expr)
-	if expr.head != :call  # TODO: allow vectors
-		println("Only calls are allowed.")
-		return false
-	end
-	# func = expr.args[1]
-	# safe_funcs = [:+, :-, :*, :/, :^, :√, :sqrt]
-	# if func ∉ safe_funcs
-	# 	println(func, " is not an allowed operation.")
-	# 	return false
-	# end
-	return all(is_safe.(expr.args))
-end=#
